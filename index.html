@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Escala Definitivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .calendar-day { min-height: 95px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal { transition: opacity 0.25s ease; }
+        
+        /* Cores de Fundo das Células (Retângulos) */
+        .bg-work { background-color: rgba(34, 197, 94, 0.25) !important; } /* Verde Trabalho */
+        .bg-off { background-color: rgba(6, 182, 212, 0.15) !important; }  /* Azul Ciano Claro Folga */
+
+        .status-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .status-rotate { 
+            transform: rotate(-45deg); 
+            white-space: nowrap;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .holiday-official { border: 2px solid #fbbf24; }
+        .holiday-commemorative { border: 2px solid #fde68a; }
+        .holiday-official-bg { background: rgba(251, 191, 36, 0.1) !important; }
+        .holiday-commemorative-bg { background: rgba(253, 230, 138, 0.1) !important; }
+
+        .today-tag {
+            background-color: #22d3ee;
+            color: #083344;
+            font-weight: 800;
+            font-size: 0.5rem;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+        .today-cell { box-shadow: inset 0 0 0 2px #22d3ee !important; }
+        .signature { color: #374151; font-size: 0.65rem; margin-top: 2rem; text-align: center; width: 100%; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8">
+        <div class="w-full max-w-6xl mx-auto">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl sm:text-5xl font-extrabold text-cyan-400 tracking-tight">Painel de Escala Definitivo</h1>
+                <p class="text-gray-400 mt-2 text-lg">A ferramenta completa para a sua organização</p>
+            </header>
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+                    <div class="flex flex-col space-y-2">
+                        <label for="start-date" class="font-semibold text-gray-300">Data de Início</label>
+                        <input id="start-date" type="date" class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                         <label for="end-date" class="font-semibold text-gray-300">Data de Fim</label>
+                        <input id="end-date" type="date" class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <label for="scale-type" class="font-semibold text-gray-300">Tipo de Escala</label>
+                        <select id="scale-type" class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                            <option value="6x1_fds">6x1 (Fins de Semana)</option>
+                            <option value="6x1">6x1 (Padrão)</option>
+                            <option value="5x2">5x2 (Padrão)</option>
+                            <option value="5x1">5x1 (Padrão)</option>
+                            <option value="4x4">4x4 (Dias)</option>
+                            <option value="3x3">3x3 (Dias)</option>
+                            <option value="12x36">12x36</option>
+                            <option value="personalizada">Personalizada</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="fds-pattern-container" class="mt-4">
+                     <label for="start-pattern" class="font-semibold text-gray-300">No 1º fim de semana, eu...</label>
+                     <select id="start-pattern" class="mt-2 bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                        <option value="trabalho_sabado">Trabalhei no Sábado</option>
+                        <option value="folga_sabado">Folguei no Sábado</option>
+                     </select>
+                </div>
+
+                <div id="custom-pattern-container" class="mt-4 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex flex-col space-y-2">
+                            <label class="font-semibold text-gray-300">Dias de Trabalho</label>
+                            <input id="custom-work-days" type="number" min="1" max="30" value="5"
+                                class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <label class="font-semibold text-gray-300">Dias de Folga</label>
+                            <input id="custom-off-days" type="number" min="1" max="30" value="2"
+                                class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <label class="font-semibold text-gray-300">Começar com</label>
+                            <select id="custom-start" class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition w-full">
+                                <option value="trabalho">Trabalho</option>
+                                <option value="folga">Folga</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-center">
+                    <button id="generate-button" class="w-full md:w-auto flex items-center justify-center gap-3 bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Gerar Escala
+                    </button>
+                </div>
+            </div>
+
+            <div id="output-container" class="space-y-8"></div>
+            
+            <div class="signature">
+                by Tiago C Araujo – Araújo II – mat 3240 – Bel-tour 🚌🗽🚠😎👨‍✈️
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center opacity-0 z-[100]">
+        <div class="absolute w-full h-full bg-gray-900 opacity-90"></div>
+        <div class="bg-gray-800 w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+            <div class="py-4 text-left px-6">
+                <div class="flex justify-between items-start pb-3 border-b border-gray-700 mb-4">
+                    <div id="modal-header-content">
+                        <p id="modal-title" class="text-2xl font-bold text-cyan-400">Título</p>
+                        <div id="modal-holiday-info" class="mt-1"></div>
+                    </div>
+                    <button id="modal-close" class="cursor-pointer z-50 text-2xl">&times;</button>
+                </div>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startDateInput = document.getElementById('start-date'), endDateInput = document.getElementById('end-date'), scaleTypeInput = document.getElementById('scale-type'), startPatternInput = document.getElementById('start-pattern'), fdsPatternContainer = document.getElementById('fds-pattern-container'), customPatternContainer = document.getElementById('custom-pattern-container'), generateButton = document.getElementById('generate-button'), outputContainer = document.getElementById('output-container'), customWorkDaysInput = document.getElementById('custom-work-days'), customOffDaysInput = document.getElementById('custom-off-days'), customStartInput = document.getElementById('custom-start');
+        let notes = JSON.parse(localStorage.getItem('escalaNotes')) || {};
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        const calculateEaster = (year) => {
+            const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(year, month - 1, day);
+        };
+        const addDays = (date, days) => { const result = new Date(date); result.setDate(result.getDate() + days); return result; };
+        const formatDate = (date) => date.toISOString().slice(0, 10);
+
+        const getHolidays = (start, end) => {
+            const holidays = {};
+            for (let year = start.getFullYear(); year <= end.getFullYear(); year++) {
+                holidays[`${year}-01-01`] = { name: 'Confraternização Universal', type: 'official' };
+                holidays[`${year}-04-21`] = { name: 'Tiradentes', type: 'official' };
+                holidays[`${year}-05-01`] = { name: 'Dia do Trabalho', type: 'official' };
+                holidays[`${year}-09-07`] = { name: 'Independência do Brasil', type: 'official' };
+                holidays[`${year}-10-12`] = { name: 'Nossa Senhora Aparecida', type: 'official' };
+                holidays[`${year}-11-02`] = { name: 'Finados', type: 'official' };
+                holidays[`${year}-11-15`] = { name: 'Proclamação da República', type: 'official' };
+                holidays[`${year}-12-25`] = { name: 'Natal', type: 'official' };
+                const easter = calculateEaster(year), carnival = addDays(easter, -47), goodFriday = addDays(easter, -2), corpusChristi = addDays(easter, 60);
+                holidays[formatDate(carnival)] = { name: 'Carnaval', type: 'official' };
+                holidays[formatDate(goodFriday)] = { name: 'Paixão de Cristo', type: 'official' };
+                holidays[formatDate(corpusChristi)] = { name: 'Corpus Christi', type: 'official' };
+                holidays[`${year}-01-20`] = { name: 'São Sebastião (RJ)', type: 'official' };
+                holidays[`${year}-11-20`] = { name: 'Consciência Negra (RJ)', type: 'official' };
+                holidays[`${year}-07-05`] = { name: 'Aniversário de Itaguaí', type: 'official' };
+                holidays[`${year}-12-03`] = { name: 'São Francisco Xavier (Itaguaí)', type: 'official' };
+                holidays[`${year}-07-25`] = { name: 'Dia do Rodoviário', type: 'commemorative' };
+                const may = new Date(year, 4, 1), secondSundayMay = addDays(may, ((7 - may.getDay()) % 7) + 7);
+                holidays[formatDate(secondSundayMay)] = { name: 'Dia das Mães', type: 'commemorative' };
+                const aug = new Date(year, 7, 1), secondSundayAug = addDays(aug, ((7 - aug.getDay()) % 7) + 7);
+                holidays[formatDate(secondSundayAug)] = { name: 'Dia dos Pais', type: 'commemorative' };
+            }
+            return holidays;
+        };
+        const toggleFdsPattern = () => { fdsPatternContainer.style.display = scaleTypeInput.value === '6x1_fds' ? 'block' : 'none'; };
+        const toggleCustomPattern = () => { customPatternContainer.style.display = scaleTypeInput.value === 'personalizada' ? 'block' : 'none'; };
+
+        scaleTypeInput.addEventListener('change', () => { toggleFdsPattern(); toggleCustomPattern(); });
+
+        const handleGenerateSchedule = () => {
+            outputContainer.innerHTML = '';
+            const startDate = startDateInput.value, endDate = endDateInput.value;
+            if (!startDate || !endDate) { renderError("Por favor, preencha as datas de início e fim."); return; }
+            const start = new Date(startDate + 'T00:00:00'), end = new Date(endDate + 'T00:00:00');
+            const holidays = getHolidays(start, end);
+            const scheduleData = calculateSchedule(start, end, scaleTypeInput.value);
+            renderSchedule(scheduleData, holidays);
+        };
+
+        const calculateSchedule = (start, end, scaleType) => {
+            let days = {}, summary, workDays = 0, offDays = 0;
+            if (scaleType === '6x1_fds') {
+                let workedSats = 0, workedSuns = 0, fdsOff = 0, currentDate = new Date(start);
+                while (currentDate.getDay() !== 6) { currentDate.setDate(currentDate.getDate() + 1); }
+                let isWorkSat = startPatternInput.value === 'trabalho_sabado';
+                while (currentDate <= end) {
+                    const sat = new Date(currentDate), sun = new Date(currentDate); sun.setDate(sat.getDate() + 1);
+                    if (sat >= start && sat <= end) { const s = isWorkSat ? 'Trabalho' : 'Folga'; days[formatDate(sat)] = { status: s }; s === 'Trabalho' ? workedSats++ : fdsOff++; }
+                    if (sun >= start && sun <= end) { const s = isWorkSat ? 'Folga' : 'Trabalho'; days[formatDate(sun)] = { status: s }; s === 'Trabalho' ? workedSuns++ : fdsOff++; }
+                    isWorkSat = !isWorkSat; currentDate.setDate(currentDate.getDate() + 7);
+                }
+                summary = { workedSaturdays: workedSats, workedSundays: workedSuns, offDays: fdsOff };
+            } else {
+                let currentDate = new Date(start), workCycle, offCycle;
+                const cycles = { '6x1': [6, 1], '5x2': [5, 2], '5x1': [5, 1], '4x4': [4, 4], '3x3': [3, 3], '12x36': [1, 1] };
+                if (scaleType === 'personalizada') { workCycle = parseInt(customWorkDaysInput.value) || 1; offCycle = parseInt(customOffDaysInput.value) || 1; }
+                else { [workCycle, offCycle] = cycles[scaleType]; }
+                let cycleTotal = workCycle + offCycle, dayCounter = 0;
+                const startStatus = scaleType === 'personalizada' ? customStartInput.value : 'trabalho';
+                while (currentDate <= end) {
+                    const dateStr = formatDate(currentDate), pos = dayCounter % cycleTotal;
+                    let status = (scaleType === 'personalizada' && startStatus === 'folga') ? (pos < offCycle ? 'Folga' : 'Trabalho') : (pos < workCycle ? 'Trabalho' : 'Folga');
+                    days[dateStr] = { status }; status === 'Trabalho' ? workDays++ : offDays++;
+                    currentDate.setDate(currentDate.getDate() + 1); dayCounter++;
+                }
+                summary = { workDays, offDays };
+            }
+            return { days, summary, scaleType };
+        };
+
+        const renderSchedule = (scheduleData, holidays) => {
+            const { days, summary, scaleType } = scheduleData;
+            let summaryHtml = `<div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 fade-in"><h2 class="text-2xl font-bold text-cyan-400 mb-4 text-center">Resumo do Período</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">`;
+            if (scaleType === '6x1_fds') {
+                summaryHtml += `<div><p class="text-3xl font-bold text-green-400">${summary.workedSaturdays}</p><p class="text-sm text-gray-400">Sábados</p></div><div><p class="text-3xl font-bold text-green-400">${summary.workedSundays}</p><p class="text-sm text-gray-400">Domingos</p></div><div><p class="text-3xl font-bold text-teal-400">${summary.workedSaturdays + summary.workedSundays}</p><p class="text-sm text-gray-400">Total FDS</p></div><div><p class="text-3xl font-bold text-blue-400">${summary.offDays}</p><p class="text-sm text-gray-400">Folgas FDS</p></div>`;
+            } else {
+                summaryHtml += `<div class="md:col-span-2"><p class="text-3xl font-bold text-green-400">${summary.workDays}</p><p class="text-sm text-gray-400">Trabalho</p></div><div class="md:col-span-2"><p class="text-3xl font-bold text-blue-400">${summary.offDays}</p><p class="text-sm text-gray-400">Folga</p></div>`;
+            }
+            outputContainer.innerHTML = `${summaryHtml}</div></div><div id="schedule-output"><div class="flex justify-center my-4"><div class="bg-gray-700 p-1 rounded-lg flex space-x-1"><button id="list-view-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition">Lista</button><button id="calendar-view-btn" class="px-4 py-2 text-sm font-semibold rounded-md transition">Calendário</button></div></div><div id="schedule-content"></div></div><div class="bg-gray-800 p-4 rounded-2xl shadow-lg border border-gray-700 fade-in text-center"><button id="copy-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition">Copiar Escala</button></div>`;
+            const start = new Date(startDateInput.value+'T00:00:00'), end = new Date(endDateInput.value+'T00:00:00'), listViewBtn = document.getElementById('list-view-btn'), calendarViewBtn = document.getElementById('calendar-view-btn'), scheduleContent = document.getElementById('schedule-content');
+            const setActiveView = (view) => {
+                if (view === 'list') { listViewBtn.classList.add('bg-cyan-500', 'text-gray-900'); calendarViewBtn.classList.remove('bg-cyan-500', 'text-gray-900'); scheduleContent.innerHTML = renderListView(days, start, end, holidays); }
+                else { calendarViewBtn.classList.add('bg-cyan-500', 'text-gray-900'); listViewBtn.classList.remove('bg-cyan-500', 'text-gray-900'); scheduleContent.innerHTML = renderCalendarView(days, start, end, holidays); }
+            };
+            listViewBtn.addEventListener('click', () => setActiveView('list'));
+            calendarViewBtn.addEventListener('click', () => setActiveView('calendar'));
+            document.getElementById('copy-btn').addEventListener('click', () => showCopyModal(days, start, end, holidays));
+            setActiveView('list');
+        };
+
+        const renderListView = (days, start, end, holidays) => {
+            let html = '<div class="fade-in">', currentDate = new Date(start), lastMonthYear = null;
+            while(currentDate <= end) {
+                const dateStr = formatDate(currentDate), dayData = days[dateStr];
+                if (dayData) {
+                    const currentMonthYear = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    if(currentMonthYear !== lastMonthYear) { if (lastMonthYear !== null) { html += `<hr class="border-gray-600 my-6">`; } html += `<h3 class="text-xl font-semibold text-gray-300 mb-4 capitalize text-center">${currentMonthYear}</h3>`; lastMonthYear = currentMonthYear; }
+                    const dayLabel = currentDate.toLocaleString('pt-BR', { weekday: 'short' }).substring(0,3).toUpperCase(), dayMonth = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`, statusClass = dayData.status === 'Trabalho' ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300', holiday = holidays[dateStr], holidayInfo = holiday ? `<span class="text-xs ${holiday.type === 'official' ? 'text-yellow-400' : 'text-yellow-200'} block">${holiday.name}</span>` : '', todayTag = dateStr === todayStr ? '<span class="today-tag">HOJE</span>' : '';
+                    html += `<div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg mb-2"><div><span class="font-mono text-lg text-gray-400">${dayLabel} - ${dayMonth}${todayTag}</span>${holidayInfo}</div><span class="px-3 py-1 text-sm font-bold rounded-full ${statusClass}">${dayData.status}</span></div>`;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return html + '</div>';
+        };
+
+        const renderCalendarView = (days, start, end, holidays) => {
+            let html = '<div class="space-y-8 fade-in">', curr = new Date(start.getFullYear(), start.getMonth(), 1);
+            while(curr < end) {
+                const monthName = curr.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                html += `<div class="bg-gray-800 p-4 rounded-lg"><h3 class="text-xl font-bold text-center text-cyan-400 mb-4 capitalize">${monthName}</h3><div class="grid calendar-grid gap-1 text-center font-semibold text-gray-400 text-xs"><div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div></div><div class="grid calendar-grid gap-1 mt-2">`;
+                const month = curr.getMonth(), firstDay = new Date(curr.getFullYear(), month, 1).getDay();
+                for(let i=0; i<firstDay; i++) html += '<div></div>';
+                while(curr.getMonth() === month) {
+                    const dStr = formatDate(curr), dData = days[dStr], hday = holidays[dStr];
+                    let cellCls = 'bg-gray-700/50 hover:bg-gray-600 cursor-pointer' + (dStr === todayStr ? ' today-cell' : '');
+                    
+                    if (dData) { 
+                        // Aplicação das classes BG-WORK e BG-OFF definidas no CSS da Parte 1
+                        cellCls += dData.status === 'Trabalho' ? ' bg-work' : ' bg-off'; 
+                    }
+
+                    let content = `<div class="font-bold flex justify-between items-start">${curr.getDate()}${dStr === todayStr ? '<span class="today-tag" style="margin:0;">HOJE</span>' : ''}</div>`;
+                    let noteInd = notes[dStr] ? `<div class="text-[0.6rem] mt-1 text-purple-400 truncate">Nota</div>` : '';
+                    
+                    if (dData) { 
+                        content += `<div class="status-container"><div class="status-rotate">${dData.status}</div></div>`; 
+                    }
+                    
+                    if(hday) { cellCls += hday.type === 'official' ? ' holiday-official holiday-official-bg' : ' holiday-commemorative holiday-commemorative-bg'; content += `<div class="text-[0.6rem] mt-1 ${hday.type === 'official' ? 'text-yellow-400' : 'text-yellow-200'} truncate">${hday.name}</div>`; }
+                    html += `<div data-date="${dStr}" class="day-cell p-2 rounded-md text-xs calendar-day ${cellCls}">${content}${noteInd}</div>`;
+                    curr.setDate(curr.getDate() + 1);
+                }
+                html += '</div></div>';
+            }
+            setTimeout(() => { document.querySelectorAll('.day-cell').forEach(c => c.addEventListener('click', () => showNoteModal(c.dataset.date, getHolidays(new Date(startDateInput.value+'T00:00:00'), new Date(endDateInput.value+'T00:00:00'))[c.dataset.date]))); }, 0);
+            return html + '</div>';
+        };
+
+        const renderError = (m) => { outputContainer.innerHTML = `<div class="bg-red-900/50 text-red-300 p-4 rounded-lg text-center">${m}</div>`; };
+        const modal = document.getElementById('modal'), modalTitle = document.getElementById('modal-title'), modalHolidayInfo = document.getElementById('modal-holiday-info'), modalBody = document.getElementById('modal-body'), modalClose = document.getElementById('modal-close');
+        const openModal = () => modal.classList.remove('opacity-0', 'pointer-events-none');
+        const closeModal = () => modal.classList.add('opacity-0', 'pointer-events-none');
+        modalClose.addEventListener('click', closeModal);
+
+        const showCopyModal = (days, start, end, holidays) => {
+            modalTitle.innerText = "Copiar Escala"; modalHolidayInfo.innerHTML = '';
+            let text = "", currentDate = new Date(start), lastMonth = -1;
+            while(currentDate <= end){
+                const dateStr = formatDate(currentDate), dayData = days[dateStr];
+                if(dayData) {
+                    const currentMonth = currentDate.getMonth(); if (lastMonth !== -1 && currentMonth !== lastMonth) { text += '\n'; } lastMonth = currentMonth;
+                    const dayLabel = currentDate.toLocaleString('pt-BR', { weekday: 'short' }).substring(0,3).toUpperCase(), hText = holidays[dateStr] ? ` (${holidays[dateStr].name})` : '';
+                    text += `${dateStr.split('-').reverse().join('/')} - ${dayLabel}: ${dayData.status}${hText}\n`;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            modalBody.innerHTML = `<textarea id="copy-textarea" readonly class="w-full h-40 bg-gray-900 text-white p-2 rounded">${text}</textarea><div class="flex justify-center items-center mt-4"><button id="modal-copy-btn" class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-bold py-2 px-6 rounded-lg transition">Copiar</button><span id="copy-feedback" class="ml-4 font-semibold"></span></div>`;
+            openModal();
+            const textarea = document.getElementById('copy-textarea'), copyBtn = document.getElementById('modal-copy-btn'), fb = document.getElementById('copy-feedback');
+            copyBtn.addEventListener('click', () => { textarea.select(); document.execCommand('copy'); fb.textContent = 'Copiado!'; setTimeout(() => { fb.textContent = '' }, 2500); });
+        };
+
+        const showNoteModal = (dStr, hday) => {
+            if(!dStr) return; const dObj = new Date(dStr + 'T00:00:00'), dLbl = dObj.toLocaleString('pt-BR', { weekday: 'short' }).substring(0,3).toUpperCase();
+            modalTitle.innerText = `Anotação para ${dStr.split('-').reverse().join('/')} (${dLbl}.)`;
+            modalHolidayInfo.innerHTML = hday ? `<span class="text-sm font-bold ${hday.type === 'official' ? 'text-yellow-400' : 'text-yellow-200'}">${hday.name}</span>` : '';
+            const note = notes[dStr] || '';
+            modalBody.innerHTML = `<textarea id="note-input" class="w-full h-24 bg-gray-700 text-white p-2 rounded mt-2" placeholder="Digite sua nota...">${note}</textarea><div class="flex justify-end space-x-2 mt-4"><button id="delete-note" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Apagar</button><button id="save-note" class="bg-cyan-500 hover:bg-cyan-600 text-gray-900 font-bold py-2 px-4 rounded">Salvar</button></div>`;
+            openModal();
+            document.getElementById('save-note').onclick = () => { notes[dStr] = document.getElementById('note-input').value; if (!notes[dStr]) delete notes[dStr]; localStorage.setItem('escalaNotes', JSON.stringify(notes)); handleGenerateSchedule(); closeModal(); };
+            document.getElementById('delete-note').onclick = () => { delete notes[dStr]; localStorage.setItem('escalaNotes', JSON.stringify(notes)); handleGenerateSchedule(); closeModal(); };
+        };
+        generateButton.addEventListener('click', handleGenerateSchedule);
+        toggleFdsPattern(); toggleCustomPattern();
+    });
+    </script>
+</body>
+</html>
